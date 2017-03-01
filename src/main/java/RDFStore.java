@@ -7,7 +7,9 @@ import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.query.QueryFactory;
 import org.apache.jena.query.ResultSet;
+import org.apache.jena.query.ResultSetFactory;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.sparql.engine.http.QueryEngineHTTP;
 import org.apache.jena.update.UpdateExecutionFactory;
 import org.apache.jena.update.UpdateFactory;
 import org.apache.jena.update.UpdateRequest;
@@ -45,10 +47,19 @@ public class RDFStore {
 
   public ResultSet select(Query query) {
     Query select = QueryFactory.create(query);
-    ResultSet rs = QueryExecutionFactory
-        .createServiceRequest(ServiceConfig.CONFIG.storeUrl(), select, httpAuthenticator)
-        .execSelect();
-    return rs;
+    QueryEngineHTTP qef = QueryExecutionFactory
+        .createServiceRequest(ServiceConfig.CONFIG.storeUrl(), select, httpAuthenticator);
+    // qef.setTimeout(1000000, 1000000);
+    ResultSet rsf = null;
+    try {
+      ResultSet rs = qef.execSelect();
+      rsf = ResultSetFactory.copyResults(rs);
+    } finally {
+      qef.close();
+    }
+    return rsf;
+    // return rs;
+
   }
 
   public void update(String update) {

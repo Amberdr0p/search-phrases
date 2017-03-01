@@ -1,7 +1,5 @@
 
-import edu.stanford.nlp.ling.HasWord;
-import edu.stanford.nlp.ling.SentenceUtils;
-import edu.stanford.nlp.process.DocumentPreprocessor;
+import edu.stanford.nlp.util.CoreMap;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
 import ru.stachek66.nlp.mystem.holding.Factory;
@@ -12,20 +10,13 @@ import ru.stachek66.nlp.mystem.model.Info;
 import scala.Option;
 import scala.collection.JavaConversions;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -44,81 +35,71 @@ public class Launcher {
       new Factory("-ld --format json").newMyStem("3.0", Option.<File>empty()).get();
   private static final Option<String> nullOption = scala.Option.apply(null);
 
-  private ExecutorService executor = new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS,
-      new SynchronousQueue(), new ThreadPoolExecutor.CallerRunsPolicy());
+  private static ExecutorService executor = new ThreadPoolExecutor(30, 30, 0L,
+      TimeUnit.MILLISECONDS, new SynchronousQueue(), new ThreadPoolExecutor.CallerRunsPolicy());
 
-  private static List<String> readFile(String path) throws IOException {
-    int count = 1000; // for test
-    int i = 0;
-    List<String> res = new ArrayList<String>();
-    try (BufferedReader br = new BufferedReader(new FileReader(path))) {
-      for (String line; (line = br.readLine()) != null && i < count; i++) {
-        // process the line.
-        System.out.println(line);
-        res.add(line);
-      }
-      // line is not visible here.
-    }
-    return res;
-  }
 
-  private static void writeFileLarge()
-      throws UnsupportedEncodingException, FileNotFoundException, IOException {
-    try (Writer writer =
-        new BufferedWriter(new OutputStreamWriter(new FileOutputStream("filename.txt"), "utf-8"))) {
-      List<String> list = readFile("C://Users//Ivan//Desktop//ALL.txt");
-      for (String line : list) {
-        writer.write(line + "\r\n");
-      }
-    }
-  }
-  
-  private static void writeFile(String path, List<String> list)
-      throws UnsupportedEncodingException, FileNotFoundException, IOException {
-    try (Writer writer =
-        new BufferedWriter(new OutputStreamWriter(new FileOutputStream(path), "utf-8"))) {
-      for (String line : list) {
-        writer.write(line + "\r\n");
-      }
-    }
-  }
 
-  public static void main(String[] args) throws IOException {
-    // writeFile();
-    // readFile("C://Users//Ivan//Desktop//ALL.txt");
-
+  public static void main(String[] args) throws IOException, InterruptedException {
     RDFStore store = new RDFStore();
-
     long millis = System.currentTimeMillis();
-    DocumentPreprocessor dp = new DocumentPreprocessor("filename.txt");
-      // "C://Users//Ivan//workspace//search-phrases//test.txt", DocType.Plain, "Cp1251");
+    int window = 100;
+    ProcessingFile.readFile("filename.txt");
+    List<String> listLine = ProcessingFile.nextWindow(window);
+    int cc = 0;
+    while (!listLine.isEmpty()) { // BufferReader вынести надо будет
+      long millisWindow = System.currentTimeMillis();
+      ProcessingText.init();
+      Map<Integer, String> resLines = new TreeMap<Integer, String>();
+      for (int i = 0; i < listLine.size(); i++) {
+        processingLine(listLine.get(i), i, store, resLines);
+      }
 
-    List<String> res = new ArrayList<String>();
-    for (List<HasWord> sentence : dp) {
-      String sentenceStr = SentenceUtils.listToOriginalTextString(sentence);
-      // System.out.println(sentenceStr);
-      long millis1 = System.currentTimeMillis();
-
-      res.add(processingSentence(sentenceStr, store));
-      System.out.println("One sentence: " + String.valueOf(System.currentTimeMillis() - millis1));
+      while (true) {
+        if (resLines.size() == listLine.size()) {
+          ProcessingFile.writeFile("filetest.txt", resLines.values());
+          System.out.println("Count processing: "+ String.valueOf(cc += window));
+          break;
+        } else {
+          Thread.sleep(300);
+        }
+      }
+      System.out.println("Time window: " + String.valueOf(System.currentTimeMillis() - millisWindow));
+      listLine = ProcessingFile.nextWindow(window);
     }
-    writeFile("filetest.txt",res);
 
+    /*
+     * List<String> res = new ArrayList<String>(); for (List<HasWord> sentence : dp) { String
+     * sentenceStr = SentenceUtils.listToOriginalTextString(sentence); //
+     * System.out.println(sentenceStr); long millis1 = System.currentTimeMillis();
+     * 
+     * res.add(processingSentence(sentenceStr, store)); System.out.println("One sentence: " +
+     * String.valueOf(System.currentTimeMillis() - millis1)); } writeFile("filetest.txt",res);
+     * 
+     * 
+     */
     System.out.println("AllTime: " + String.valueOf(System.currentTimeMillis() - millis));
+  } 
+
+  private static void processingLine(String line, int numLine, RDFStore store,
+      Map<Integer, String> resLines) {
+    executor.execute(() -> {
+      List<CoreMap> lcm = ProcessingText.process(line);
+      String resLine = new String(line);
+      for (CoreMap cm : lcm) {
+        resLine = processingSentence(resLine, cm.toString(), store);
+      }
+      resLines.put(numLine, resLine);
+    });
   }
 
-  private static String processingSentence(String sentence, RDFStore store) { // возвращаем 1
-                                                                              // вариант,
-                                                                              // соединенные
-                                                                              // полностью через
-                                                                              // подчеркивания
+  private static String processingSentence(String resLine, String sentence, RDFStore store) {
     List<Info> result;
-    String str = new String(sentence);
     try {
       long millis = System.currentTimeMillis();
       result = JavaConversions
           .seqAsJavaList(mystemAnalyzer.analyze(Request.apply(sentence)).info().toSeq());
-      System.out.println("mystem:" + String.valueOf(System.currentTimeMillis() - millis));
+      // System.out.println("mystem:" + String.valueOf(System.currentTimeMillis() - millis));
       int countRes = result.size();
       for (int i = 0; i < countRes - 1; i++) {
         Option<String> lex1 = result.get(i).lex();
@@ -130,8 +111,7 @@ public class Launcher {
 
           long millisKB = System.currentTimeMillis();
           Map<String, List<String>> map = getLemmaFromKB(lex1.get(), lex2.get(), store);
-          System.out.println(
-              "Process to Map and Query: " + String.valueOf(System.currentTimeMillis() - millisKB)); //
+          // System.out.println("Process to Map and Query: " + String.valueOf(System.currentTimeMillis() - millisKB)); //
 
           for (Map.Entry<String, List<String>> entry : map.entrySet()) {
             List<String> list = entry.getValue();
@@ -139,8 +119,6 @@ public class Launcher {
 
             if (count > max) {
               int maxForList = 2;
-              // System.out.println(entry.getKey() + " " + count + " " + list);
-
               List<String> eqList = new ArrayList<String>(list);
               eqList.remove(lex1.get());
               eqList.remove(lex2.get());
@@ -175,47 +153,45 @@ public class Launcher {
                */
             }
             // System.out.println(s);
-            i += max;
-            str = replace(str, list);
+            i += max - 1;
+            resLine = replace(resLine, list);
           }
         } else { // удалить
-          System.out.print("Bad: ");
+          /* System.out.print("Bad: ");
           if (lex1 != null && lex1 != nullOption)
             System.out.println(lex1.get());
           else if (lex2 != null && lex2 != nullOption)
-            System.out.println(lex2.get());
+            System.out.println(lex2.get()); */
         }
       }
     } catch (MyStemApplicationException e) {
       e.printStackTrace();
     }
-    
-    System.out.println(str);
-    return str;
+    return resLine;
   }
 
   private static String replace(String str, List<String> list) { // ???????
     // int start = str.indexOf(list.get(0)); // первый элемент подстроки
-    // int end = str.indexOf(list.get(1), start); 
+    // int end = str.indexOf(list.get(1), start);
     int shift = 0;
     int start;
     do {
       start = str.indexOf(list.get(0), shift); // первый элемент подстроки
       int startE = start;
       int end = 0;
-      for(int i=1; i < list.size(); i++) {
+      for (int i = 1; i < list.size(); i++) {
         end = str.indexOf(list.get(i), startE);
-        
-        int sh = end - startE - list.get(i-1).length();
-        if(sh < 0 && sh > 6) {
+
+        int sh = end - startE - list.get(i - 1).length();
+        if (sh < 0 && sh > 6) {
           break;
-        } else if(i+1 == list.size()){
+        } else if (i + 1 == list.size()) {
           String l = str.substring(start, end + list.get(i).length());
-          
+
           return str.replace(l, l.replace(" ", "_"));
         }
       }
-    } while(start != -1);
+    } while (start != -1);
     return "";
   }
 
@@ -225,7 +201,7 @@ public class Launcher {
     long millis = System.currentTimeMillis();
     ResultSet res =
         store.select(QUERY_SELECT_LEMMA.replace(VAR_LEMMA1, lemma1).replace(VAR_LEMMA2, lemma2));
-    System.out.println("query: " + String.valueOf(System.currentTimeMillis() - millis));
+    //System.out.println("query: " + String.valueOf(System.currentTimeMillis() - millis));
 
     Map<String, List<String>> map = new HashMap<String, List<String>>();
     while (res != null && res.hasNext()) {
