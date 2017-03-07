@@ -7,7 +7,7 @@ import org.aeonbits.owner.ConfigFactory;
 import org.aeonbits.owner.Mutable;
 
 @LoadPolicy(LoadType.FIRST)
-@Sources({"file:C:/Users/Ivan/git/extractor_dbpedia/config.properties"})
+@Sources({"file:/blazegraph/conf/config.properties"})
 public interface ServiceConfig extends Mutable {
 
   public static final ServiceConfig CONFIG = ConfigFactory.create(ServiceConfig.class);
@@ -23,4 +23,20 @@ public interface ServiceConfig extends Mutable {
   @DefaultValue("http://winghouse.semiot.ru:3030/blazegraph/sparql")
   @Key("services.triplestore.url")
   String storeUrl();
+  
+  @DefaultValue("filename.txt")
+  @Key("services.readfile.name")
+  String readFileName();
+  
+  @DefaultValue("0")
+  @Key("services.readfile.row")
+  int readFileRow();
+  
+  @DefaultValue("fileres.txt")
+  @Key("services.write.name")
+  String writeFileName();
+  
+  @DefaultValue("3000")
+  @Key("services.window.size")
+  int windowSize();
 }

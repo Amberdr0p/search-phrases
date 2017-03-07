@@ -14,9 +14,49 @@ import java.util.List;
 public class ProcessingFile {
   private static BufferedReader br;
 
-  public static void readFile(String path) {
+
+  public static void WriteToEndFile(String path, Collection<String> list) {
+    Writer writer = null;
+    try {
+      writer = new BufferedWriter(
+          new OutputStreamWriter(new FileOutputStream(path, true), "utf-8"));
+      for (String line : list) {
+        writer.write(line + "\r\n");
+      }
+    } catch (UnsupportedEncodingException e) {
+      e.printStackTrace();
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
+      e.printStackTrace();
+    } finally {
+      if (writer != null) {
+        try {
+          writer.close();
+        } catch (IOException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+
+  public static void close() {
+    try {
+      br.close();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
+  }
+
+  public static void readFile(String path, int countScip) throws IOException {
     try {
       br = new BufferedReader(new FileReader(path));
+      int i = 0;
+      for (String line; i < countScip && (line = br.readLine()) != null; i++) {
+      }
     } catch (FileNotFoundException e) {
       e.printStackTrace();
     }
@@ -25,21 +65,21 @@ public class ProcessingFile {
   public static List<String> nextWindow(int count) throws IOException {
     int i = 0;
     List<String> res = new ArrayList<String>();
-    for (String line; (line = br.readLine()) != null && i < count; i++) {
+    for (String line; i < count && (line = br.readLine()) != null; i++) {
       res.add(line);
     }
     return res;
   }
 
-  public static void writeFile(String path, Collection<String> list)
+  public static BufferedWriter newWriteFile(String path)
       throws UnsupportedEncodingException, FileNotFoundException, IOException {
-    try (Writer writer =
-        new BufferedWriter(new OutputStreamWriter(new FileOutputStream(path), "utf-8"))) {
-      for (String line : list) {
-        writer.write(line + "\r\n");
-      }
-    }
+    return new BufferedWriter(new OutputStreamWriter(new FileOutputStream(path), "utf-8"));
   }
+
+  public static void writeLineToFile(BufferedWriter bwr, String line) throws IOException {
+    bwr.write(line + "\r\n");
+  }
+
 
   private static void writeFileLarge()
       throws UnsupportedEncodingException, FileNotFoundException, IOException {
@@ -51,7 +91,7 @@ public class ProcessingFile {
       }
     }
   }
-  
+
   public static List<String> readFileLarge(String path, int count) throws IOException {
     int i = 0;
     List<String> res = new ArrayList<String>();
@@ -65,8 +105,9 @@ public class ProcessingFile {
     return res;
   }
 
-  
-  public static void main(String[] args) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+
+  public static void main(String[] args)
+      throws UnsupportedEncodingException, FileNotFoundException, IOException {
     writeFileLarge();
   }
 }
