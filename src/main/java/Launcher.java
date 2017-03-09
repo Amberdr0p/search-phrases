@@ -13,6 +13,7 @@ import scala.collection.JavaConversions;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -53,9 +54,10 @@ public class Launcher {
       int cc = 0;
       while (!listLine.isEmpty()) { // BufferReader вынести надо будет
         logger.info("New window start"); // error специально для уровня логирования
+        // System.out.println("New window start");
         long millisWindow = System.currentTimeMillis();
         ProcessingText.init();
-        Map<Integer, String> resLines = new TreeMap<Integer, String>();
+        Map<Integer, String> resLines = Collections.synchronizedMap(new TreeMap<Integer, String>());
         for (int i = 0; i < listLine.size(); i++) {
           processingLine(listLine.get(i), i, resLines);
         }
@@ -66,14 +68,18 @@ public class Launcher {
           e.printStackTrace();
         }
 
+
         ProcessingFile.WriteToEndFile(ServiceConfig.CONFIG.writeFileName(), resLines.values());
         logger.info("Count processing: " + String.valueOf(cc += resLines.size()));
+        // System.out.println("Count processing: " + String.valueOf(cc += resLines.size()));
 
         executor = new ThreadPoolExecutor(100, 100, 0L, TimeUnit.MILLISECONDS,
             new SynchronousQueue(), new ThreadPoolExecutor.CallerRunsPolicy());
 
+        // System.out
+        // .println("Time window: " + String.valueOf(System.currentTimeMillis() - millisWindow));
         logger.info("Time window: " + String.valueOf(System.currentTimeMillis() - millisWindow));
-        listLine = ProcessingFile.nextWindow(ServiceConfig.CONFIG.windowSize());
+        // listLine = ProcessingFile.nextWindow(ServiceConfig.CONFIG.windowSize());
       }
       ProcessingFile.close();
       logger.info("AllTime: " + String.valueOf(System.currentTimeMillis() - millis));

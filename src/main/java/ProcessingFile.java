@@ -85,7 +85,7 @@ public class ProcessingFile {
       throws UnsupportedEncodingException, FileNotFoundException, IOException {
     try (Writer writer =
         new BufferedWriter(new OutputStreamWriter(new FileOutputStream("filename.txt"), "utf-8"))) {
-      List<String> list = readFileLarge("ALL.txt", 600000); // random count
+      List<String> list = readFileLarge("ALL.txt", 2000000); // random count
       for (String line : list) {
         writer.write(line + "\r\n");
       }
