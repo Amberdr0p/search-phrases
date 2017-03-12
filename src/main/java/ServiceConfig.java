@@ -20,7 +20,7 @@ public interface ServiceConfig extends Mutable {
   @Key("services.triplestore.password")
   String storePassword();
 
-  @DefaultValue("http://winghouse.semiot.ru:3030/blazegraph/sparql")
+  @DefaultValue("http://winghouse.semiot.ru:3030/blazegraph")
   @Key("services.triplestore.url")
   String storeUrl();
   

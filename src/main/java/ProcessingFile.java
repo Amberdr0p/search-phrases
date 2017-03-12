@@ -84,19 +84,21 @@ public class ProcessingFile {
   private static void writeFileLarge()
       throws UnsupportedEncodingException, FileNotFoundException, IOException {
     try (Writer writer =
-        new BufferedWriter(new OutputStreamWriter(new FileOutputStream("filename.txt"), "utf-8"))) {
-      List<String> list = readFileLarge("ALL.txt", 2000000); // random count
+        new BufferedWriter(new OutputStreamWriter(new FileOutputStream("filename.txt",true), "utf-8"))) {
+      List<String> list = readFileLarge("ALL.txt", 1000000, 16000000); // 17 обработано
       for (String line : list) {
         writer.write(line + "\r\n");
       }
     }
   }
 
-  public static List<String> readFileLarge(String path, int count) throws IOException {
+  public static List<String> readFileLarge(String path, int count, int countScip) throws IOException {
     int i = 0;
     List<String> res = new ArrayList<String>();
     try (BufferedReader br = new BufferedReader(new FileReader(path))) {
-      for (String line; (line = br.readLine()) != null && i < count; i++) {
+      for (String line; i < countScip && (line = br.readLine()) != null; i++) {
+      }
+      for (String line; (line = br.readLine()) != null && i < count+countScip; i++) {
         // process the line.
         // System.out.println(line);
         res.add(line);

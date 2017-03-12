@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 public class BlazegraphS {
-  private static final String sparqlEndPoint = "http://winghouse.semiot.ru:3030/blazegraph";
+  // private static final String sparqlEndPoint = "http://winghouse.semiot.ru:3030/blazegraph";
 
   private static final String QUERY_SELECT_LEMMA =
       "select ?uri ?x { ?uri <http://www.custom-ontology.org/ner#lemma> ?x. "
@@ -22,7 +22,7 @@ public class BlazegraphS {
   
   private static final long maxQueryMs = 10000;
 
-  private static final RemoteRepositoryManager repo = new RemoteRepositoryManager(sparqlEndPoint);
+  private static final RemoteRepositoryManager repo = new RemoteRepositoryManager(ServiceConfig.CONFIG.storeUrl());
   private static final RemoteRepository rr = repo.getRepositoryForDefaultNamespace();
 
   public static Map<String, List<String>> selectMap(String query) {
@@ -68,7 +68,7 @@ public class BlazegraphS {
 
   public static void main(String[] args) throws Exception {
 
-    final RemoteRepositoryManager repo = new RemoteRepositoryManager(sparqlEndPoint);
+    final RemoteRepositoryManager repo = new RemoteRepositoryManager(ServiceConfig.CONFIG.storeUrl());
     final RemoteRepository rr = repo.getRepositoryForDefaultNamespace();
 
     try {
