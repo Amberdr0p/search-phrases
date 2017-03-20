@@ -18,8 +18,8 @@ public class ProcessingFile {
   public static void WriteToEndFile(String path, Collection<String> list) {
     Writer writer = null;
     try {
-      writer = new BufferedWriter(
-          new OutputStreamWriter(new FileOutputStream(path, true), "utf-8"));
+      writer =
+          new BufferedWriter(new OutputStreamWriter(new FileOutputStream(path, true), "utf-8"));
       for (String line : list) {
         writer.write(line + "\r\n");
       }
@@ -81,26 +81,50 @@ public class ProcessingFile {
   }
 
 
+  private static void writeFileLargeLL() 
+    throws IOException {
+    try (Writer writer = new BufferedWriter(
+        new OutputStreamWriter(new FileOutputStream("filename1.txt", true), "utf-8"))) {
+      int countScip = 37000000; 
+      int count = 8000000;
+      
+      BufferedReader br = getBr("ALL.txt", countScip);
+      
+      int i = countScip;
+      for(String line; (line = br.readLine()) != null && i < count + countScip; i++) {
+        writer.write(line + "\r\n");
+      }
+    }
+  }
+
+  private static BufferedReader getBr(String path, int countScip) throws IOException {
+    int i = 0;
+    List<String> res = new ArrayList<String>();
+    BufferedReader br = new BufferedReader(new FileReader(path));
+    for (String line; i < countScip && (line = br.readLine()) != null; i++) {
+    }
+    return br;
+  }
+
   private static void writeFileLarge()
       throws UnsupportedEncodingException, FileNotFoundException, IOException {
-    try (Writer writer =
-        new BufferedWriter(new OutputStreamWriter(new FileOutputStream("filename.txt",true), "utf-8"))) {
-      List<String> list = readFileLarge("ALL.txt", 1000000, 16000000); // 17 обработано
+    try (Writer writer = new BufferedWriter(
+        new OutputStreamWriter(new FileOutputStream("filename.txt", true), "utf-8"))) {
+      List<String> list = readFileLarge("ALL.txt", 2000000, 31000000); // 29 обработано
       for (String line : list) {
         writer.write(line + "\r\n");
       }
     }
   }
 
-  public static List<String> readFileLarge(String path, int count, int countScip) throws IOException {
+  public static List<String> readFileLarge(String path, int count, int countScip)
+      throws IOException {
     int i = 0;
     List<String> res = new ArrayList<String>();
     try (BufferedReader br = new BufferedReader(new FileReader(path))) {
       for (String line; i < countScip && (line = br.readLine()) != null; i++) {
       }
-      for (String line; (line = br.readLine()) != null && i < count+countScip; i++) {
-        // process the line.
-        // System.out.println(line);
+      for (String line; (line = br.readLine()) != null && i < count + countScip; i++) {
         res.add(line);
       }
     }
@@ -110,6 +134,6 @@ public class ProcessingFile {
 
   public static void main(String[] args)
       throws UnsupportedEncodingException, FileNotFoundException, IOException {
-    writeFileLarge();
+    writeFileLargeLL();
   }
 }
