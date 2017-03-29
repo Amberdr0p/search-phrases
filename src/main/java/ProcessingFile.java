@@ -84,8 +84,8 @@ public class ProcessingFile {
   private static void writeFileLargeLL() 
     throws IOException {
     try (Writer writer = new BufferedWriter(
-        new OutputStreamWriter(new FileOutputStream("filename1.txt", true), "utf-8"))) {
-      int countScip = 37000000; 
+        new OutputStreamWriter(new FileOutputStream("filename2.txt", true), "utf-8"))) {
+      int countScip = 61000000; 
       int count = 8000000;
       
       BufferedReader br = getBr("ALL.txt", countScip);
